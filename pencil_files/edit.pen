@@ -1,0 +1,192 @@
+{
+  "version": "2.9",
+  "children": [
+    {
+      "type": "frame",
+      "id": "bi8Au",
+      "x": 0,
+      "y": 0,
+      "name": "Frame",
+      "clip": true,
+      "width": 800,
+      "height": 600,
+      "fill": "#FFFFFF",
+      "layout": "none"
+    },
+    {
+      "type": "frame",
+      "id": "d1SHT",
+      "x": 0,
+      "y": 0,
+      "name": "Document Editor",
+      "width": 1280,
+      "height": "fit_content(800)",
+      "children": [
+        {
+          "type": "frame",
+          "id": "tOgrt",
+          "name": "Left Panel",
+          "width": 360,
+          "height": "fill_container",
+          "fill": "#FFFBFE",
+          "layout": "vertical",
+          "gap": 20,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Y3MYV",
+              "name": "titleSection",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "EkWTA",
+                  "name": "titleLabel",
+                  "fill": "#49454F",
+                  "content": "Document Title",
+                  "fontFamily": "Roboto",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "YDhi7",
+                  "name": "titleField",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "#F3EDF7",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jSP4e",
+                      "name": "titleInput",
+                      "fill": "#1D1B20",
+                      "content": "Untitled Document",
+                      "fontFamily": "Roboto",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "3WyWi",
+              "name": "descSection",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "d9QKw",
+                  "name": "descLabel",
+                  "fill": "#49454F",
+                  "content": "Description",
+                  "fontFamily": "Roboto",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "j45xi",
+                  "name": "descField",
+                  "width": "fill_container",
+                  "height": 80,
+                  "fill": "#F3EDF7",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lGv1B",
+                      "name": "descInput",
+                      "fill": "#79747E",
+                      "content": "Add a description...",
+                      "fontFamily": "Roboto",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PlZzc",
+              "name": "contentSection",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "VGYzx",
+                  "name": "contentLabel",
+                  "fill": "#49454F",
+                  "content": "Content",
+                  "fontFamily": "Roboto",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "gcrM1",
+                  "name": "contentField",
+                  "width": "fill_container",
+                  "height": 160,
+                  "fill": "#F3EDF7",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "6f1np",
+                      "name": "contentInput",
+                      "fill": "#79747E",
+                      "content": "Start writing your document content here...",
+                      "fontFamily": "Roboto",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "n1Hf7",
+          "name": "Main Panel",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "#FEF7FF",
+          "layout": "vertical",
+          "gap": 20,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ZdnED",
+              "name": "Editor Area",
+              "width": "fill_container",
+              "height": 380,
+              "fill": "#FFFFFF",
+              "cornerRadius": 16,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "#E7E0EC"
+              },
+              "layout": "vertical"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
