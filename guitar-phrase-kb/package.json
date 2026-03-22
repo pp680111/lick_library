@@ -1,0 +1,40 @@
+{
+  "name": "guitar-phrase-kb",
+  "version": "1.0.0",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron .",
+    "build": "vite build && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.guitarphrasekb.app",
+    "productName": "Guitar Phrase KB",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "src/main/**/*",
+      "src/preload/**/*",
+      "dist/**/*"
+    ]
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^5.0.10",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "soundfont-player": "^0.12.0",
+    "sql.js": "^1.10.3",
+    "uuid": "^9.0.1",
+    "vexflow": "^4.2.3"
+  }
+}
