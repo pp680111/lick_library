@@ -20,7 +20,8 @@
       "y": 0,
       "name": "Document Editor",
       "width": 1280,
-      "height": "fit_content(800)",
+      "height": 800,
+      "fill": "#00000080",
       "children": [
         {
           "type": "frame",
@@ -183,6 +184,96 @@
                 "fill": "#E7E0EC"
               },
               "layout": "vertical"
+            },
+            {
+              "type": "frame",
+              "id": "px9bs",
+              "name": "Action Bar",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NEXa0",
+                  "name": "spacer",
+                  "width": "fill_container",
+                  "height": 48
+                },
+                {
+                  "type": "frame",
+                  "id": "sPGBu",
+                  "name": "cancelBtn",
+                  "height": 48,
+                  "fill": "#F3EDF7",
+                  "cornerRadius": 24,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    24
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "B5mFI",
+                      "name": "cancelIcon",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "close",
+                      "iconFontFamily": "Material Symbols Outlined",
+                      "fill": "#49454F"
+                    },
+                    {
+                      "type": "text",
+                      "id": "iKp5b",
+                      "name": "cancelText",
+                      "fill": "#49454F",
+                      "content": "Cancel",
+                      "fontFamily": "Roboto",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZqorS",
+                  "name": "saveBtn",
+                  "height": 48,
+                  "fill": "#6750A4",
+                  "cornerRadius": 24,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    24
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "kgIdR",
+                      "name": "saveIcon",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "check",
+                      "iconFontFamily": "Material Symbols Outlined",
+                      "fill": "#FFFFFF"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jqFUg",
+                      "name": "saveText",
+                      "fill": "#FFFFFF",
+                      "content": "Save",
+                      "fontFamily": "Roboto",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }

@@ -147,6 +147,15 @@
                   "fill": "#00000000",
                   "width": 56,
                   "height": 56
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 16,
+                  "id": "YOArC",
+                  "name": "addButton",
+                  "fill": "#EADDFF",
+                  "width": 48,
+                  "height": 48
                 }
               ]
             },
@@ -237,6 +246,7 @@
                           "type": "frame",
                           "id": "KOXRj",
                           "name": "doc1Info",
+                          "width": "fill_container",
                           "layout": "vertical",
                           "gap": 4,
                           "padding": 12,
@@ -261,6 +271,16 @@
                               "fontWeight": "normal"
                             }
                           ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "QLlo7",
+                          "name": "moreIcon",
+                          "fill": "#1D1B20",
+                          "content": "⋮",
+                          "fontFamily": "Roboto",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
                         }
                       ]
                     },
@@ -278,6 +298,7 @@
                           "type": "frame",
                           "id": "TbzLw",
                           "name": "doc2Info",
+                          "width": "fill_container",
                           "layout": "vertical",
                           "gap": 4,
                           "padding": 12,
@@ -302,6 +323,16 @@
                               "fontWeight": "normal"
                             }
                           ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "W8ofH",
+                          "name": "moreIcon",
+                          "fill": "#1D1B20",
+                          "content": "⋮",
+                          "fontFamily": "Roboto",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
                         }
                       ]
                     },
@@ -319,6 +350,7 @@
                           "type": "frame",
                           "id": "riRO7",
                           "name": "doc3Info",
+                          "width": "fill_container",
                           "layout": "vertical",
                           "gap": 4,
                           "padding": 12,
@@ -343,6 +375,16 @@
                               "fontWeight": "normal"
                             }
                           ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "x2Sdq",
+                          "name": "moreIcon",
+                          "fill": "#1D1B20",
+                          "content": "⋮",
+                          "fontFamily": "Roboto",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
                         }
                       ]
                     },
@@ -360,6 +402,7 @@
                           "type": "frame",
                           "id": "JxA0R",
                           "name": "doc4Info",
+                          "width": "fill_container",
                           "layout": "vertical",
                           "gap": 4,
                           "padding": 12,
@@ -384,6 +427,16 @@
                               "fontWeight": "normal"
                             }
                           ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "BTK9U",
+                          "name": "moreIcon",
+                          "fill": "#1D1B20",
+                          "content": "⋮",
+                          "fontFamily": "Roboto",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
                         }
                       ]
                     }
