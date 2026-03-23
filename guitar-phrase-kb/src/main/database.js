@@ -43,6 +43,8 @@ class PhraseDatabase {
     }
 
     // Create tables
+    this.db.run('PRAGMA foreign_keys = ON');
+
     this.db.run(`
       CREATE TABLE IF NOT EXISTS phrases (
         rowid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,6 +124,11 @@ class PhraseDatabase {
       params.push(...filter.tagIds);
     }
 
+    if (filter.query) {
+      sql += ' AND (note LIKE ? OR title LIKE ?)';
+      params.push(`%${filter.query}%`, `%${filter.query}%`);
+    }
+
     sql += ' ORDER BY updated_at DESC';
     const result = this.db.exec(sql, params);
     return this._rowsToObjects(result);
@@ -178,6 +185,7 @@ class PhraseDatabase {
   }
 
   deletePhrase(id) {
+    this.db.run('DELETE FROM phrase_tags WHERE phrase_id = ?', [id]);
     this.db.run('DELETE FROM phrases WHERE id = ?', [id]);
     this.save();
   }
@@ -195,6 +203,7 @@ class PhraseDatabase {
   }
 
   deleteTag(id) {
+    this.db.run('DELETE FROM phrase_tags WHERE tag_id = ?', [id]);
     this.db.run('DELETE FROM tags WHERE id = ?', [id]);
     this.save();
   }
@@ -203,12 +212,7 @@ class PhraseDatabase {
     if (!query) return this.getPhrases();
 
     // Simple LIKE-based search (sql.js doesn't support FTS5)
-    const results = this.db.exec(`
-      SELECT * FROM phrases
-      WHERE note LIKE ? OR title LIKE ?
-      ORDER BY updated_at DESC
-    `, [`%${query}%`, `%${query}%`]);
-    return this._rowsToObjects(results);
+    return this.getPhrases({ query });
   }
 
   close() {

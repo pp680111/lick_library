@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 export function PhraseEditor({
   isOpen,
@@ -13,45 +13,55 @@ export function PhraseEditor({
   const [musicXml, setMusicXml] = useState('')
   const [note, setNote] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState([])
+  const [errorMessage, setErrorMessage] = useState('')
   const previewRef = useRef(null)
 
   useEffect(() => {
+    if (!isOpen) return
+
     if (phrase) {
       setTitle(phrase.title || '')
       setMusicXml(phrase.music_xml || '')
       setNote(phrase.note || '')
-      setSelectedTagIds(phrase.tags?.map((t) => t.id) || [])
+      setSelectedTagIds(phrase.tags?.map((tag) => tag.id) || [])
     } else {
       setTitle('')
       setMusicXml('')
       setNote('')
       setSelectedTagIds([])
     }
+
+    setErrorMessage('')
   }, [phrase, isOpen])
 
   useEffect(() => {
-    if (isOpen && musicXml && previewRef.current) {
-      onPreview?.(musicXml, previewRef.current)
-    }
+    if (!isOpen || !previewRef.current) return
+
+    onPreview?.(musicXml, previewRef.current)
   }, [isOpen, musicXml, onPreview])
 
-  const handleTagClick = (tagId) => {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId)
-        ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
+  const isEdit = Boolean(phrase?.id)
+
+  const handleTagToggle = (tagId) => {
+    setSelectedTagIds((previous) =>
+      previous.includes(tagId)
+        ? previous.filter((id) => id !== tagId)
+        : [...previous, tagId]
     )
   }
 
   const handleSave = () => {
     if (!title.trim()) {
-      alert('请输入标题')
+      setErrorMessage('Please enter a phrase title.')
       return
     }
+
     if (!musicXml.trim()) {
-      alert('请输入 MusicXML')
+      setErrorMessage('Please enter MusicXML content.')
       return
     }
+
+    setErrorMessage('')
 
     onSave({
       id: phrase?.id,
@@ -62,105 +72,118 @@ export function PhraseEditor({
     })
   }
 
-  const handleTagInputKeyDown = (e) => {
-    if (e.key === 'Enter' && e.target.value.trim()) {
-      onAddTag(e.target.value.trim())
-      e.target.value = ''
-    }
+  const handleTagInputKeyDown = (event) => {
+    if (event.key !== 'Enter') return
+
+    const value = event.target.value.trim()
+    if (!value) return
+
+    onAddTag(value)
+    event.target.value = ''
   }
 
   if (!isOpen) return null
 
-  const isEdit = !!phrase
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            {isEdit ? '编辑乐句' : '新建乐句'}
-          </h2>
-          <button className="modal-close" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        <div className="modal-body">
-          <div className="editor-left">
-            <div className="editor-field">
-              <label className="editor-label">标题</label>
-              <input
-                type="text"
-                className="editor-input"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="输入乐句标题"
-              />
-            </div>
-
-            <div className="editor-field">
-              <label className="editor-label">MusicXML</label>
-              <textarea
-                className="editor-textarea musicxml"
-                value={musicXml}
-                onChange={(e) => setMusicXml(e.target.value)}
-                placeholder="输入 MusicXML 格式的乐谱数据"
-              />
-            </div>
-
-            <div className="editor-field">
-              <label className="editor-label">标签</label>
-              <div className="tag-list">
-                {tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className={`tag ${tag.type} ${
-                      selectedTagIds.includes(tag.id) ? 'active' : ''
-                    }`}
-                    onClick={() => handleTagClick(tag.id)}
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-              <input
-                type="text"
-                className="tag-add-input"
-                placeholder="+ 添加标签 (回车确认)"
-                onKeyDown={handleTagInputKeyDown}
-              />
-            </div>
+    <div className="editor-shell" onClick={onClose}>
+      <div className="editor-dialog" onClick={(event) => event.stopPropagation()}>
+        <div className="editor-left-panel">
+          <div className="editor-field-group">
+            <label className="editor-label" htmlFor="phrase-title">
+              Phrase Title
+            </label>
+            <input
+              id="phrase-title"
+              type="text"
+              className="editor-input"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Example: G Mixolydian Turnaround"
+            />
           </div>
 
-          <div className="editor-right">
-            <div className="editor-field">
-              <label className="editor-label">笔记</label>
-              <textarea
-                className="editor-textarea note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="记录乐句的特点、和弦进行、演奏技巧等"
-              />
+          <div className="editor-field-group">
+            <label className="editor-label" htmlFor="phrase-note">
+              Analysis Notes
+            </label>
+            <textarea
+              id="phrase-note"
+              className="editor-textarea editor-note"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Write down harmony, fingering, practice goals, or your own analysis."
+            />
+          </div>
+
+          <div className="editor-field-group">
+            <label className="editor-label" htmlFor="phrase-xml">
+              MusicXML
+            </label>
+            <textarea
+              id="phrase-xml"
+              className="editor-textarea editor-xml"
+              value={musicXml}
+              onChange={(event) => setMusicXml(event.target.value)}
+              placeholder="Paste MusicXML here."
+            />
+          </div>
+
+          <div className="editor-field-group">
+            <div className="editor-tag-header">
+              <span className="editor-label">Tags</span>
+              <span className="editor-tag-meta">{selectedTagIds.length} selected</span>
             </div>
 
-            <div className="editor-field">
-              <label className="editor-label">预览</label>
-              <div className="editor-preview" ref={previewRef}>
-                <div className="preview-placeholder">
-                  {musicXml ? '预览加载中...' : '输入 MusicXML 后在此预览'}
-                </div>
-              </div>
+            <div className="tag-cluster modal-tag-cluster">
+              {tags.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  className={`tag-chip ${tag.type} ${
+                    selectedTagIds.includes(tag.id) ? 'active' : ''
+                  }`}
+                  onClick={() => handleTagToggle(tag.id)}
+                >
+                  {tag.name}
+                </button>
+              ))}
             </div>
+
+            <input
+              type="text"
+              className="tag-entry"
+              placeholder="Press Enter to add a tag"
+              onKeyDown={handleTagInputKeyDown}
+            />
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>
-            取消
-          </button>
-          <button className="btn btn-primary" onClick={handleSave}>
-            保存
-          </button>
+        <div className="editor-right-panel">
+          <div className="preview-workbench">
+            <div className="score-panel-header">
+              <span className="score-title">{isEdit ? 'Edit Preview' : 'New Phrase Preview'}</span>
+              <span className="score-subtitle">
+                Check whether the score can be parsed in real time
+              </span>
+            </div>
+            <div className="editor-preview" ref={previewRef}>
+              <div className="preview-placeholder">
+                {musicXml ? 'Rendering preview...' : 'The preview will appear after you enter MusicXML'}
+              </div>
+            </div>
+          </div>
+
+          {errorMessage ? <div className="editor-error">{errorMessage}</div> : null}
+
+          <div className="editor-action-bar">
+            <div className="editor-action-spacer" />
+            <button type="button" className="secondary-button" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="button" className="primary-button" onClick={handleSave}>
+              {isEdit ? 'Save Changes' : 'Create Phrase'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

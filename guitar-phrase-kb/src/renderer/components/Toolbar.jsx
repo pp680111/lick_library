@@ -1,61 +1,53 @@
 import React from 'react'
 
 export function Toolbar({
-  onPlay,
-  onStop,
-  onNew,
   bpm,
-  onBpmChange,
-  searchQuery,
-  onSearchChange,
+  currentPhrase,
   isPlaying,
+  onBpmChange,
+  onEdit,
 }) {
   return (
-    <header className="toolbar">
-      <div className="toolbar-brand">
+    <header className="topbar">
+      <div className="topbar-brand">
         <div className="logo-icon" />
-        <span className="app-title">吉他乐句</span>
-      </div>
-
-      <div className="toolbar-controls">
-        <button
-          className="play-btn"
-          onClick={onPlay}
-          title={isPlaying ? '暂停' : '播放'}
-        >
-          {isPlaying ? '⏸' : '▶'}
-        </button>
-        <button className="stop-btn" onClick={onStop} title="停止">
-          ⏹
-        </button>
-        <div className="bpm-control">
-          <span className="bpm-label">BPM:</span>
-          <input
-            type="number"
-            className="bpm-input"
-            value={bpm}
-            onChange={(e) => onBpmChange(parseInt(e.target.value) || 120)}
-            min={20}
-            max={300}
-          />
+        <div className="brand-copy">
+          <span className="app-title">Guitar Phrase KB</span>
+          <span className="app-subtitle">
+            Organize phrases with tags, notes, and playback
+          </span>
         </div>
       </div>
 
-      <div className="toolbar-spacer" />
+      <div className="topbar-spacer" />
 
-      <div className="search-box">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="搜索笔记..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
+      <div className="topbar-actions">
+        <label className="tempo-chip">
+          <span className="tempo-label">BPM</span>
+          <input
+            type="number"
+            className="tempo-input"
+            value={bpm}
+            onChange={(e) => onBpmChange(parseInt(e.target.value, 10) || 120)}
+            min={20}
+            max={300}
+          />
+        </label>
+
+        <button
+          type="button"
+          className="icon-action"
+          onClick={onEdit}
+          disabled={!currentPhrase}
+          title={currentPhrase ? 'Edit current phrase' : 'Select a phrase first'}
+        >
+          Edit
+        </button>
+
+        <div className={`status-pill ${isPlaying ? 'playing' : ''}`}>
+          {isPlaying ? 'Playing' : 'Idle'}
+        </div>
       </div>
-
-      <button className="new-btn" onClick={onNew}>
-        + 新建
-      </button>
     </header>
   )
 }
