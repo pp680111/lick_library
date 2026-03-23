@@ -111,7 +111,6 @@ export default function App() {
   const [phrases, setPhrases] = useState([])
   const [currentPhrase, setCurrentPhrase] = useState(null)
   const [tags, setTags] = useState([])
-  const [selectedTags, setSelectedTags] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [bpm, setBpm] = useState(120)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -160,10 +159,7 @@ export default function App() {
 
   useEffect(() => {
     const loadFilteredPhrases = async () => {
-      const result = await loadPhrases({
-        tagIds: selectedTags,
-        query: searchQuery.trim(),
-      })
+      const result = await loadPhrases({ query: searchQuery.trim() })
 
       if (!currentPhrase) return
 
@@ -174,7 +170,7 @@ export default function App() {
     }
 
     loadFilteredPhrases()
-  }, [currentPhrase, loadPhrases, searchQuery, selectedTags])
+  }, [currentPhrase, loadPhrases, searchQuery])
 
   useEffect(() => {
     const initMidiPlayer = async () => {
@@ -205,6 +201,7 @@ export default function App() {
         await import('vexflow')
 
       const { beats, beatType, parsedNotes } = parseMusicXmlForPreview(musicXml)
+      const renderHeight = 260
 
       if (!parsedNotes.length) {
         targetContainer.innerHTML =
@@ -214,7 +211,7 @@ export default function App() {
 
       const renderer = new Renderer(targetContainer, Renderer.Backends.SVG)
       const width = Math.min(targetContainer.clientWidth || 760, 820)
-      renderer.resize(width, 220)
+      renderer.resize(width, renderHeight)
 
       const context = renderer.getContext()
       const stave = new Stave(20, 24, width - 40)
@@ -247,6 +244,8 @@ export default function App() {
       voice.addTickables(notes)
       new Formatter().joinVoices([voice]).format([voice], width - 80)
       voice.draw(context, stave)
+
+      targetContainer.style.minHeight = `${renderHeight}px`
     } catch (error) {
       console.error('VexFlow render error:', error)
       targetContainer.innerHTML = `<div class="render-error">${error.message}</div>`
@@ -301,19 +300,21 @@ export default function App() {
     setEditorOpen(true)
   }
 
+  const handleOpenEditForPhrase = async (phrase) => {
+    const fullPhrase =
+      currentPhrase?.id === phrase.id ? currentPhrase : await loadPhraseById(phrase.id)
+
+    if (!fullPhrase) return
+
+    setEditingPhrase(fullPhrase)
+    setEditorOpen(true)
+  }
+
   const handlePhraseSelect = async (phrase) => {
     const fullPhrase = await loadPhraseById(phrase.id)
     if (fullPhrase && isPlaying) {
       handleStop()
     }
-  }
-
-  const handleTagToggle = (tagId) => {
-    setSelectedTags((previous) =>
-      previous.includes(tagId)
-        ? previous.filter((id) => id !== tagId)
-        : [...previous, tagId]
-    )
   }
 
   const handleSave = async (data) => {
@@ -330,7 +331,7 @@ export default function App() {
       setEditingPhrase(null)
 
       await Promise.all([
-        loadPhrases({ tagIds: selectedTags, query: searchQuery.trim() }),
+        loadPhrases({ query: searchQuery.trim() }),
         loadTags(),
       ])
 
@@ -355,7 +356,26 @@ export default function App() {
       await api.deletePhrase(currentPhrase.id)
       setCurrentPhrase(null)
       handleStop()
-      await loadPhrases({ tagIds: selectedTags, query: searchQuery.trim() })
+      await loadPhrases({ query: searchQuery.trim() })
+    } catch (error) {
+      console.error('Failed to delete phrase:', error)
+      window.alert(`Delete failed: ${error.message}`)
+    }
+  }
+
+  const handleDeletePhrase = async (phrase) => {
+    const confirmed = window.confirm(`Delete phrase "${phrase.title}"?`)
+    if (!confirmed) return
+
+    try {
+      await api.deletePhrase(phrase.id)
+
+      if (currentPhrase?.id === phrase.id) {
+        setCurrentPhrase(null)
+        handleStop()
+      }
+
+      await loadPhrases({ query: searchQuery.trim() })
     } catch (error) {
       console.error('Failed to delete phrase:', error)
       window.alert(`Delete failed: ${error.message}`)
@@ -383,10 +403,8 @@ export default function App() {
     <div className="app-shell">
       <Toolbar
         bpm={bpm}
-        currentPhrase={currentPhrase}
         isPlaying={isPlaying}
         onBpmChange={setBpm}
-        onEdit={handleOpenEdit}
       />
 
       <div className="workspace">
@@ -428,14 +446,12 @@ export default function App() {
         </aside>
 
         <Sidebar
-          tags={tags}
-          selectedTags={selectedTags}
           phrases={phrases}
           currentPhrase={currentPhrase}
           searchQuery={searchQuery}
-          onTagToggle={handleTagToggle}
           onPhraseSelect={handlePhraseSelect}
-          onAddTag={handleAddTag}
+          onPhraseEdit={handleOpenEditForPhrase}
+          onPhraseDelete={handleDeletePhrase}
           onSearchChange={setSearchQuery}
         />
 
@@ -445,15 +461,12 @@ export default function App() {
           searchQuery={searchQuery}
           bpm={bpm}
           isPlaying={isPlaying}
-          onEdit={handleOpenEdit}
-          onDelete={handleDelete}
         />
       </div>
 
       <StatusBar
         currentPhrase={currentPhrase}
         totalCount={phrases.length}
-        selectedTagCount={selectedTags.length}
         searchQuery={searchQuery}
       />
 

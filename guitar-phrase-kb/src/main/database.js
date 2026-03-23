@@ -113,23 +113,25 @@ class PhraseDatabase {
   }
 
   getPhrases(filter = {}) {
-    let sql = 'SELECT * FROM phrases WHERE 1=1';
+    let sql = `
+      SELECT DISTINCT p.*
+      FROM phrases p
+      LEFT JOIN phrase_tags pt ON p.id = pt.phrase_id
+      LEFT JOIN tags t ON t.id = pt.tag_id
+      WHERE 1=1
+    `;
     const params = [];
 
-    if (filter.tagIds && filter.tagIds.length > 0) {
-      const placeholders = filter.tagIds.map(() => '?').join(',');
-      sql += ` AND id IN (
-        SELECT phrase_id FROM phrase_tags WHERE tag_id IN (${placeholders})
-      )`;
-      params.push(...filter.tagIds);
-    }
-
     if (filter.query) {
-      sql += ' AND (note LIKE ? OR title LIKE ?)';
-      params.push(`%${filter.query}%`, `%${filter.query}%`);
+      sql += ' AND (p.note LIKE ? OR p.title LIKE ? OR t.name LIKE ?)';
+      params.push(
+        `%${filter.query}%`,
+        `%${filter.query}%`,
+        `%${filter.query}%`
+      );
     }
 
-    sql += ' ORDER BY updated_at DESC';
+    sql += ' ORDER BY p.updated_at DESC';
     const result = this.db.exec(sql, params);
     return this._rowsToObjects(result);
   }

@@ -88,87 +88,91 @@ export function PhraseEditor({
     <div className="editor-shell" onClick={onClose}>
       <div className="editor-dialog" onClick={(event) => event.stopPropagation()}>
         <div className="editor-left-panel">
-          <div className="editor-field-group">
-            <label className="editor-label" htmlFor="phrase-title">
-              Phrase Title
-            </label>
-            <input
-              id="phrase-title"
-              type="text"
-              className="editor-input"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Example: G Mixolydian Turnaround"
-            />
-          </div>
-
-          <div className="editor-field-group">
-            <label className="editor-label" htmlFor="phrase-note">
-              Analysis Notes
-            </label>
-            <textarea
-              id="phrase-note"
-              className="editor-textarea editor-note"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Write down harmony, fingering, practice goals, or your own analysis."
-            />
-          </div>
-
-          <div className="editor-field-group">
-            <label className="editor-label" htmlFor="phrase-xml">
-              MusicXML
-            </label>
-            <textarea
-              id="phrase-xml"
-              className="editor-textarea editor-xml"
-              value={musicXml}
-              onChange={(event) => setMusicXml(event.target.value)}
-              placeholder="Paste MusicXML here."
-            />
-          </div>
-
-          <div className="editor-field-group">
-            <div className="editor-tag-header">
-              <span className="editor-label">Tags</span>
-              <span className="editor-tag-meta">{selectedTagIds.length} selected</span>
+          <div className="editor-left-scroll">
+            <div className="editor-field-group">
+              <label className="editor-label" htmlFor="phrase-title">
+                Phrase Title
+              </label>
+              <input
+                id="phrase-title"
+                type="text"
+                className="editor-input"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Example: G Mixolydian Turnaround"
+              />
             </div>
 
-            <div className="tag-cluster modal-tag-cluster">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className={`tag-chip ${tag.type} ${
-                    selectedTagIds.includes(tag.id) ? 'active' : ''
-                  }`}
-                  onClick={() => handleTagToggle(tag.id)}
-                >
-                  {tag.name}
-                </button>
-              ))}
+            <div className="editor-field-group">
+              <label className="editor-label" htmlFor="phrase-note">
+                Analysis Notes
+              </label>
+              <textarea
+                id="phrase-note"
+                className="editor-textarea editor-note"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="Write down harmony, fingering, practice goals, or your own analysis."
+              />
             </div>
 
-            <input
-              type="text"
-              className="tag-entry"
-              placeholder="Press Enter to add a tag"
-              onKeyDown={handleTagInputKeyDown}
-            />
+            <div className="editor-field-group">
+              <label className="editor-label" htmlFor="phrase-xml">
+                MusicXML
+              </label>
+              <textarea
+                id="phrase-xml"
+                className="editor-textarea editor-xml"
+                value={musicXml}
+                onChange={(event) => setMusicXml(event.target.value)}
+                placeholder="Paste MusicXML here."
+              />
+            </div>
+
+            <div className="editor-field-group">
+              <div className="editor-tag-header">
+                <span className="editor-label">Tags</span>
+                <span className="editor-tag-meta">{selectedTagIds.length} selected</span>
+              </div>
+
+              <div className="tag-cluster modal-tag-cluster">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={`tag-chip ${tag.type} ${
+                      selectedTagIds.includes(tag.id) ? 'active' : ''
+                    }`}
+                    onClick={() => handleTagToggle(tag.id)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="text"
+                className="tag-entry"
+                placeholder="Press Enter to add a tag"
+                onKeyDown={handleTagInputKeyDown}
+              />
+            </div>
           </div>
         </div>
 
         <div className="editor-right-panel">
-          <div className="preview-workbench">
-            <div className="score-panel-header">
-              <span className="score-title">{isEdit ? 'Edit Preview' : 'New Phrase Preview'}</span>
-              <span className="score-subtitle">
-                Check whether the score can be parsed in real time
-              </span>
-            </div>
-            <div className="editor-preview" ref={previewRef}>
-              <div className="preview-placeholder">
-                {musicXml ? 'Rendering preview...' : 'The preview will appear after you enter MusicXML'}
+          <div className="editor-right-scroll">
+            <div className="preview-workbench">
+              <div className="score-panel-header">
+                <span className="score-title">{isEdit ? 'Edit Preview' : 'New Phrase Preview'}</span>
+                <span className="score-subtitle">
+                  Check whether the score can be parsed in real time
+                </span>
+              </div>
+              <div className="editor-preview" ref={previewRef}>
+                <div className="preview-placeholder">
+                  {musicXml ? 'Rendering preview...' : 'The preview will appear after you enter MusicXML'}
+                </div>
               </div>
             </div>
           </div>

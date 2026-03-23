@@ -23,7 +23,7 @@ function highlightText(text, query) {
 }
 
 export const PhraseDetail = forwardRef(function PhraseDetail(
-  { phrase, searchQuery, bpm, isPlaying, onEdit, onDelete },
+  { phrase, searchQuery, bpm, isPlaying },
   ref
 ) {
   if (!phrase) {
@@ -83,15 +83,6 @@ export const PhraseDetail = forwardRef(function PhraseDetail(
               <span className="tag-chip muted">Unsorted</span>
             )}
           </div>
-        </div>
-
-        <div className="detail-actions">
-          <button type="button" className="secondary-button" onClick={onEdit}>
-            Edit Phrase
-          </button>
-          <button type="button" className="danger-button" onClick={onDelete}>
-            Delete Phrase
-          </button>
         </div>
 
         <div className="preview-divider" />

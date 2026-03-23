@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 function formatPhraseMeta(phrase) {
   const updatedAt = phrase.updated_at
@@ -12,28 +12,24 @@ function formatPhraseMeta(phrase) {
 }
 
 export function Sidebar({
-  tags,
-  selectedTags,
   phrases,
   currentPhrase,
   searchQuery,
-  onTagToggle,
   onPhraseSelect,
-  onAddTag,
+  onPhraseEdit,
+  onPhraseDelete,
   onSearchChange,
 }) {
-  const presetTags = tags.filter((tag) => tag.type === 'preset')
-  const customTags = tags.filter((tag) => tag.type === 'custom')
+  const [openMenuId, setOpenMenuId] = useState(null)
 
-  const handleTagKeyDown = (event) => {
-    if (event.key !== 'Enter') return
+  useEffect(() => {
+    const handleWindowClick = () => {
+      setOpenMenuId(null)
+    }
 
-    const value = event.target.value.trim()
-    if (!value) return
-
-    onAddTag(value)
-    event.target.value = ''
-  }
+    window.addEventListener('click', handleWindowClick)
+    return () => window.removeEventListener('click', handleWindowClick)
+  }, [])
 
   return (
     <aside className="library-panel">
@@ -41,51 +37,9 @@ export function Sidebar({
         <input
           type="text"
           className="library-search"
-          placeholder="Search title or notes"
+          placeholder="Search title, notes, or related tags"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-        />
-      </div>
-
-      <div className="library-section">
-        <div className="section-header">
-          <span className="section-title">Tag Filters</span>
-          <span className="section-meta">{selectedTags.length} selected</span>
-        </div>
-
-        <div className="tag-cluster">
-          {presetTags.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              className={`tag-chip preset ${
-                selectedTags.includes(tag.id) ? 'active' : ''
-              }`}
-              onClick={() => onTagToggle(tag.id)}
-            >
-              {tag.name}
-            </button>
-          ))}
-
-          {customTags.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              className={`tag-chip custom ${
-                selectedTags.includes(tag.id) ? 'active' : ''
-              }`}
-              onClick={() => onTagToggle(tag.id)}
-            >
-              {tag.name}
-            </button>
-          ))}
-        </div>
-
-        <input
-          type="text"
-          className="tag-entry"
-          placeholder="Press Enter to add a custom tag"
-          onKeyDown={handleTagKeyDown}
         />
       </div>
 
@@ -99,22 +53,66 @@ export function Sidebar({
           {phrases.length === 0 ? (
             <div className="phrase-empty">No matching phrases</div>
           ) : (
-            phrases.map((phrase) => (
-              <button
-                key={phrase.id}
-                type="button"
-                className={`phrase-card ${
-                  currentPhrase?.id === phrase.id ? 'active' : ''
-                }`}
-                onClick={() => onPhraseSelect(phrase)}
-              >
-                <div className="phrase-card-copy">
-                  <span className="phrase-card-title">{phrase.title}</span>
-                  <span className="phrase-card-meta">{formatPhraseMeta(phrase)}</span>
+            phrases.map((phrase) => {
+              const menuOpen = openMenuId === phrase.id
+
+              return (
+                <div
+                  key={phrase.id}
+                  className={`phrase-card ${
+                    currentPhrase?.id === phrase.id ? 'active' : ''
+                  }`}
+                  onClick={() => onPhraseSelect(phrase)}
+                >
+                  <div className="phrase-card-copy">
+                    <span className="phrase-card-title">{phrase.title}</span>
+                    <span className="phrase-card-meta">{formatPhraseMeta(phrase)}</span>
+                  </div>
+
+                  <div className="phrase-card-menu-wrap">
+                    <button
+                      type="button"
+                      className="phrase-card-menu-button"
+                      title="Open phrase menu"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setOpenMenuId(menuOpen ? null : phrase.id)
+                      }}
+                    >
+                      ...
+                    </button>
+
+                    {menuOpen ? (
+                      <div
+                        className="phrase-card-menu"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          className="phrase-card-menu-item"
+                          onClick={() => {
+                            setOpenMenuId(null)
+                            onPhraseEdit(phrase)
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="phrase-card-menu-item danger"
+                          onClick={() => {
+                            setOpenMenuId(null)
+                            onPhraseDelete(phrase)
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                <span className="phrase-card-more">...</span>
-              </button>
-            ))
+              )
+            })
           )}
         </div>
       </div>

@@ -52,7 +52,9 @@ button {
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .topbar {
@@ -68,20 +70,13 @@ button {
 .topbar-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  background: var(--md-primary);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  gap: 0;
 }
 
 .brand-copy {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .app-title {
@@ -337,6 +332,7 @@ button {
 
 .phrase-card {
   display: flex;
+  position: relative;
   align-items: flex-start;
   gap: 12px;
   width: 100%;
@@ -366,16 +362,64 @@ button {
 }
 
 .phrase-card-meta,
-.phrase-card-more,
+.phrase-card-menu-button,
 .score-subtitle,
 .meta-text {
   font-size: 13px;
   color: var(--md-text-muted);
 }
 
-.phrase-card-more {
-  font-size: 20px;
+.phrase-card-menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.phrase-card-menu-button {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 18px;
   line-height: 1;
+}
+
+.phrase-card-menu-button:hover {
+  background: rgba(103, 80, 164, 0.08);
+}
+
+.phrase-card-menu {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 124px;
+  padding: 6px;
+  border: 1px solid var(--md-surface-border);
+  border-radius: 14px;
+  background: var(--md-surface);
+  box-shadow: 0 14px 30px rgba(29, 27, 32, 0.14);
+}
+
+.phrase-card-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--md-text);
+  cursor: pointer;
+}
+
+.phrase-card-menu-item:hover {
+  background: var(--md-surface-muted);
+}
+
+.phrase-card-menu-item.danger {
+  color: var(--md-danger);
 }
 
 .phrase-empty {
@@ -391,6 +435,8 @@ button {
   min-height: 0;
   padding: 24px;
   background: var(--md-surface-soft);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .preview-card {
@@ -403,6 +449,7 @@ button {
   border-radius: 28px;
   background: var(--md-surface);
   box-shadow: var(--md-shadow);
+  overflow: visible;
 }
 
 .preview-card.empty {
@@ -470,11 +517,6 @@ button {
   gap: 8px;
 }
 
-.detail-actions {
-  display: flex;
-  gap: 12px;
-}
-
 .preview-divider {
   width: 100%;
   height: 1px;
@@ -487,6 +529,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex-shrink: 0;
+  min-height: 0;
 }
 
 .score-panel-header {
@@ -511,9 +555,15 @@ button {
 
 .vexflow-container,
 .editor-preview {
-  min-height: 220px;
+  min-height: 260px;
   padding: 16px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.vexflow-container svg,
+.editor-preview svg {
+  display: block;
 }
 
 .vexflow-placeholder,
@@ -524,6 +574,7 @@ button {
 }
 
 .xml-block {
+  max-height: 360px;
   padding: 16px;
   font-family: Consolas, monospace;
   font-size: 13px;
@@ -553,6 +604,7 @@ button {
 .editor-dialog {
   display: flex;
   width: min(1280px, 100%);
+  height: min(900px, calc(100vh - 64px));
   min-height: 0;
   border-radius: 24px;
   overflow: hidden;
@@ -565,17 +617,31 @@ button {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
   padding: 24px;
 }
 
 .editor-left-panel {
   width: 360px;
   background: var(--md-surface);
+  overflow: hidden;
 }
 
 .editor-right-panel {
   flex: 1;
   background: var(--md-surface-soft);
+  overflow: hidden;
+}
+
+.editor-left-scroll,
+.editor-right-scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .editor-field-group {
