@@ -7,12 +7,6 @@ export function Toolbar({
 }) {
   return (
     <header className="topbar">
-      <div className="topbar-brand">
-        <div className="brand-copy">
-          <span className="app-title">Guitar Phrase KB</span>
-        </div>
-      </div>
-
       <div className="topbar-spacer" />
 
       <div className="topbar-actions">

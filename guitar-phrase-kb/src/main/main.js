@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const PhraseDatabase = require('./database');
 
@@ -9,12 +9,15 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+  Menu.setApplicationMenu(null);
+  mainWindow.setMenuBarVisibility(false);
 
   // Load the app
   if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
