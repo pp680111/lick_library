@@ -40,6 +40,39 @@ export function PhraseEditor({
     onPreview?.(musicXml, previewRef.current)
   }, [isOpen, musicXml, onPreview])
 
+  useEffect(() => {
+    if (!isOpen || !previewRef.current || typeof ResizeObserver === 'undefined') return
+
+    const target = previewRef.current
+    let previousWidth = target.clientWidth
+    let frameId = null
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      const nextWidth = Math.round(entry?.contentRect?.width || 0)
+
+      if (!nextWidth || nextWidth === previousWidth) return
+      previousWidth = nextWidth
+
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
+
+      frameId = requestAnimationFrame(() => {
+        onPreview?.(musicXml, target)
+      })
+    })
+
+    observer.observe(target)
+
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
+      observer.disconnect()
+    }
+  }, [isOpen, musicXml, onPreview])
+
   const isEdit = Boolean(phrase?.id)
 
   const handleTagToggle = (tagId) => {

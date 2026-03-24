@@ -16,7 +16,7 @@ const fallbackApi = {
 }
 
 function parseDuration(durationType) {
-  const baseType = durationType.replace(/r$/, '')
+  const baseType = durationType.replace(/d/g, '').replace(/r$/, '')
 
   switch (baseType) {
     case 'w':
@@ -44,6 +44,123 @@ function normalizePitch(step, octave, alter) {
   return `${step.toLowerCase()}${accidental}/${octave}`
 }
 
+function formatHarmonyStep(step, alter) {
+  const accidental = alter === 1 ? '#' : alter === -1 ? 'b' : ''
+  return `${step || ''}${accidental}`
+}
+
+function formatHarmonyKind(kindText, kindValue) {
+  if (kindText?.trim()) return kindText.trim()
+
+  switch ((kindValue || '').trim()) {
+    case 'dominant':
+      return '7'
+    case 'major-seventh':
+      return 'maj7'
+    case 'minor-seventh':
+      return 'm7'
+    case 'minor':
+      return 'm'
+    case 'major':
+      return ''
+    case 'diminished':
+      return 'dim'
+    case 'augmented':
+      return 'aug'
+    default:
+      return kindValue?.trim() || ''
+  }
+}
+
+function parseHarmony(harmonyElement) {
+  if (!harmonyElement) return null
+
+  const rootStep = harmonyElement.querySelector('root > root-step')?.textContent?.trim()
+    || harmonyElement.querySelector('root > step')?.textContent?.trim()
+  if (!rootStep) return null
+
+  const rootAlter = parseInt(
+    harmonyElement.querySelector('root > root-alter')?.textContent
+      || harmonyElement.querySelector('root > alter')?.textContent
+      || '0',
+    10
+  )
+  const kindElement = harmonyElement.querySelector('kind')
+  const kindText = kindElement?.getAttribute('text') || ''
+  const kindValue = kindElement?.textContent || ''
+  const bassStep = harmonyElement.querySelector('bass > bass-step')?.textContent?.trim()
+  const bassAlter = parseInt(
+    harmonyElement.querySelector('bass > bass-alter')?.textContent || '0',
+    10
+  )
+
+  const root = formatHarmonyStep(rootStep, rootAlter)
+  const suffix = formatHarmonyKind(kindText, kindValue)
+  const bass = bassStep ? `/${formatHarmonyStep(bassStep, bassAlter)}` : ''
+
+  return `${root}${suffix}${bass}`
+}
+
+function parseBarlineType(barlineElement, location) {
+  if (!barlineElement) return null
+
+  const repeatDirection = barlineElement.querySelector('repeat')?.getAttribute('direction')
+  if (repeatDirection === 'forward') {
+    return 'repeat-begin'
+  }
+
+  if (repeatDirection === 'backward') {
+    return 'repeat-end'
+  }
+
+  const barStyle = barlineElement.querySelector('bar-style')?.textContent?.trim()
+  if (location === 'right') {
+    if (barStyle === 'light-light') return 'double'
+    if (barStyle === 'light-heavy') return 'end'
+  }
+
+  if (location === 'left') {
+    if (barStyle === 'heavy-light') return 'begin'
+    if (barStyle === 'light-light') return 'double'
+  }
+
+  return null
+}
+
+function parseClefSignToVexflow(sign) {
+  switch ((sign || '').toUpperCase()) {
+    case 'F':
+      return 'bass'
+    case 'C':
+      return 'alto'
+    default:
+      return 'treble'
+  }
+}
+
+function getUnsupportedMusicXmlReason(xml) {
+  const parts = xml.querySelectorAll('score-partwise > part')
+  if (parts.length > 1) {
+    return '当前仅支持简单的单声部 MusicXML 预览，暂不支持多 part 的复杂乐谱。'
+  }
+
+  const noteVoices = new Set(
+    Array.from(xml.querySelectorAll('note > voice'))
+      .map((voiceElement) => voiceElement.textContent?.trim())
+      .filter(Boolean)
+  )
+
+  if (noteVoices.size > 1) {
+    return '当前仅支持简单的单声部 MusicXML 预览，暂不支持多 voice 的复杂乐谱。'
+  }
+
+  if (xml.querySelector('backup, forward')) {
+    return '当前仅支持线性时间结构的 MusicXML 预览，暂不支持包含 backup/forward 的复杂乐谱。'
+  }
+
+  return null
+}
+
 function parseMusicXmlForPreview(musicXml) {
   const parser = new DOMParser()
   const xml = parser.parseFromString(musicXml, 'application/xml')
@@ -52,57 +169,111 @@ function parseMusicXmlForPreview(musicXml) {
     throw new Error('MusicXML parsing failed. Check the source content.')
   }
 
-  const divisions = parseInt(
-    xml.querySelector('divisions')?.textContent || '1',
+  const unsupportedReason = getUnsupportedMusicXmlReason(xml)
+  if (unsupportedReason) {
+    throw new Error(unsupportedReason)
+  }
+
+  const firstAttributes = xml.querySelector('part > measure > attributes')
+  let divisions = parseInt(
+    firstAttributes?.querySelector('divisions')?.textContent || '1',
     10
   )
-  const beats = parseInt(xml.querySelector('beats')?.textContent || '4', 10)
-  const beatType = parseInt(
-    xml.querySelector('beat-type')?.textContent || '4',
+  let beats = parseInt(
+    firstAttributes?.querySelector('time > beats')?.textContent || '4',
     10
+  )
+  let beatType = parseInt(
+    firstAttributes?.querySelector('time > beat-type')?.textContent || '4',
+    10
+  )
+  let clef = parseClefSignToVexflow(
+    firstAttributes?.querySelector('clef > sign')?.textContent || 'G'
   )
 
-  const parsedNotes = Array.from(xml.querySelectorAll('note'))
-    .slice(0, 16)
-    .map((noteElement) => {
-      const isRest = Boolean(noteElement.querySelector('rest'))
-      const duration = parseInt(
-        noteElement.querySelector('duration')?.textContent || '1',
+  const measures = Array.from(xml.querySelectorAll('score-partwise > part > measure'))
+    .map((measureElement) => {
+      const attributes = measureElement.querySelector(':scope > attributes')
+      const measureDivisions = parseInt(
+        attributes?.querySelector('divisions')?.textContent || `${divisions}`,
         10
       )
-      const durationType = `${xmlDurationToVexflow(duration, divisions)}${
-        isRest ? 'r' : ''
-      }`
+      const measureBeats = parseInt(
+        attributes?.querySelector('time > beats')?.textContent || `${beats}`,
+        10
+      )
+      const measureBeatType = parseInt(
+        attributes?.querySelector('time > beat-type')?.textContent || `${beatType}`,
+        10
+      )
+      const measureClef = parseClefSignToVexflow(
+        attributes?.querySelector('clef > sign')?.textContent || clef
+      )
 
-      if (isRest) {
-        return {
-          isRest: true,
-          durationType,
+      divisions = measureDivisions
+      beats = measureBeats
+      beatType = measureBeatType
+      clef = measureClef
+
+      const parsedNotes = Array.from(measureElement.querySelectorAll(':scope > note')).map(
+        (noteElement) => {
+          const isRest = Boolean(noteElement.querySelector('rest'))
+          const duration = parseInt(
+            noteElement.querySelector('duration')?.textContent || '1',
+            10
+          )
+          const hasDot = Boolean(noteElement.querySelector('dot'))
+          const durationType = `${xmlDurationToVexflow(duration, measureDivisions)}${
+            hasDot ? 'd' : ''
+          }${isRest ? 'r' : ''}`
+
+          if (isRest) {
+            return {
+              isRest: true,
+              durationType,
+            }
+          }
+
+          const step = noteElement.querySelector('step')?.textContent || 'C'
+          const octave = parseInt(
+            noteElement.querySelector('octave')?.textContent || '4',
+            10
+          )
+          const alter = parseInt(
+            noteElement.querySelector('alter')?.textContent || '0',
+            10
+          )
+
+          return {
+            isRest: false,
+            durationType,
+            keys: [normalizePitch(step, octave, alter)],
+            accidental: alter === 1 ? '#' : alter === -1 ? 'b' : null,
+          }
         }
-      }
-
-      const step = noteElement.querySelector('step')?.textContent || 'C'
-      const octave = parseInt(
-        noteElement.querySelector('octave')?.textContent || '4',
-        10
-      )
-      const alter = parseInt(
-        noteElement.querySelector('alter')?.textContent || '0',
-        10
       )
 
       return {
-        isRest: false,
-        durationType,
-        keys: [normalizePitch(step, octave, alter)],
-        accidental: alter === 1 ? '#' : alter === -1 ? 'b' : null,
+        number: measureElement.getAttribute('number') || '',
+        beats: measureBeats,
+        beatType: measureBeatType,
+        clef: measureClef,
+        harmony: parseHarmony(measureElement.querySelector(':scope > harmony')),
+        leftBarline: parseBarlineType(
+          measureElement.querySelector(':scope > barline[location="left"]'),
+          'left'
+        ),
+        rightBarline: parseBarlineType(
+          measureElement.querySelector(':scope > barline[location="right"]'),
+          'right'
+        ),
+        parsedNotes,
       }
     })
+    .filter((measure) => measure.parsedNotes.length > 0)
 
   return {
-    beats,
-    beatType,
-    parsedNotes,
+    measures,
   }
 }
 
@@ -188,6 +359,7 @@ export default function App() {
   const renderVexFlow = useCallback(async (musicXml, targetContainer = scoreRef.current) => {
     if (!targetContainer) return
 
+    targetContainer.dataset.musicXmlPreview = musicXml || ''
     targetContainer.innerHTML = ''
 
     if (!musicXml?.trim()) {
@@ -197,53 +369,142 @@ export default function App() {
     }
 
     try {
-      const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } =
+      const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental, Barline } =
         await import('vexflow')
 
-      const { beats, beatType, parsedNotes } = parseMusicXmlForPreview(musicXml)
-      const renderHeight = 260
+      const { measures } = parseMusicXmlForPreview(musicXml)
 
-      if (!parsedNotes.length) {
+      if (!measures.length) {
         targetContainer.innerHTML =
           '<div class="vexflow-placeholder">No renderable notes were detected.</div>'
         return
       }
 
       const renderer = new Renderer(targetContainer, Renderer.Backends.SVG)
-      const width = Math.min(targetContainer.clientWidth || 760, 820)
+      const width = Math.max(targetContainer.clientWidth || 760, 320)
+      const leftPadding = 20
+      const rightPadding = 20
+      const topPadding = 24
+      const horizontalGap = 0
+      const rowHeight = 148
+      const maxRowWidth = width - leftPadding - rightPadding
+      const minimumMeasureWidth = 120
+      const noteWidth = 28
+      const rowStartPadding = 72
+
+      const placements = []
+      let cursorX = leftPadding
+      let cursorY = topPadding
+      let rowCount = 1
+
+      measures.forEach((measure, index) => {
+        const estimatedWidth = Math.max(
+          minimumMeasureWidth,
+          36 + measure.parsedNotes.length * noteWidth
+        )
+        const isNextRowStart = cursorX === leftPadding
+        const requiredWidth = estimatedWidth + (isNextRowStart ? rowStartPadding : 0)
+        const exceedsRow = cursorX > leftPadding && cursorX + requiredWidth > width - rightPadding
+
+        if (exceedsRow) {
+          cursorX = leftPadding
+          cursorY += rowHeight
+          rowCount += 1
+        }
+
+        const isRowStart = cursorX === leftPadding
+        const measureWidth = Math.min(
+          maxRowWidth,
+          estimatedWidth + (isRowStart ? rowStartPadding : 0)
+        )
+
+        placements.push({
+          index,
+          x: cursorX,
+          y: cursorY,
+          isRowStart,
+          measureWidth,
+        })
+
+        cursorX += measureWidth + horizontalGap
+      })
+
+      const renderHeight = Math.max(260, topPadding + rowCount * rowHeight)
       renderer.resize(width, renderHeight)
 
       const context = renderer.getContext()
-      const stave = new Stave(20, 24, width - 40)
-      stave.addClef('treble').addTimeSignature(`${beats}/${beatType}`)
-      stave.setContext(context).draw()
 
-      const notes = parsedNotes.map((parsedNote) => {
-        const note = new StaveNote({
-          keys: parsedNote.isRest ? ['b/4'] : parsedNote.keys,
-          duration: parsedNote.durationType,
-        })
+      placements.forEach(({ index, x, y, isRowStart, measureWidth }) => {
+        const measure = measures[index]
+        const stave = new Stave(x, y, measureWidth)
 
-        if (parsedNote.accidental) {
-          note.addModifier(new Accidental(parsedNote.accidental), 0)
+        const leftBarTypeMap = {
+          begin: Barline.type.SINGLE,
+          double: Barline.type.DOUBLE,
+          'repeat-begin': Barline.type.REPEAT_BEGIN,
+        }
+        const rightBarTypeMap = {
+          double: Barline.type.DOUBLE,
+          end: Barline.type.END,
+          'repeat-end': Barline.type.REPEAT_END,
         }
 
-        return note
+        stave.setBegBarType(
+          isRowStart
+            ? leftBarTypeMap[measure.leftBarline] || Barline.type.SINGLE
+            : leftBarTypeMap[measure.leftBarline] || Barline.type.NONE
+        )
+        stave.setEndBarType(rightBarTypeMap[measure.rightBarline] || Barline.type.SINGLE)
+
+        if (isRowStart) {
+          stave.addClef(measure.clef).addTimeSignature(
+            `${measure.beats}/${measure.beatType}`
+          )
+        }
+
+        stave.setContext(context).draw()
+
+        if (measure.harmony) {
+          stave.setText(measure.harmony, 0, {
+            shift_y: -18,
+            justification: 1,
+          })
+        }
+
+        if (measure.number) {
+          stave.setText(measure.number, 0, {
+            shift_y: -36,
+            justification: 2,
+          })
+        }
+
+        const notes = measure.parsedNotes.map((parsedNote) => {
+          const note = new StaveNote({
+            keys: parsedNote.isRest ? ['b/4'] : parsedNote.keys,
+            duration: parsedNote.durationType,
+          })
+
+          if (parsedNote.accidental) {
+            note.addModifier(new Accidental(parsedNote.accidental), 0)
+          }
+
+          return note
+        })
+
+        const totalBeats = notes.reduce((sum, note) => {
+          const { numBeats, beatValue } = parseDuration(note.getDuration())
+          return sum + (numBeats * 4) / beatValue
+        }, 0)
+
+        const voice = new Voice({
+          num_beats: Math.max(measure.beats, Math.ceil(totalBeats)),
+          beat_value: measure.beatType,
+        })
+
+        voice.addTickables(notes)
+        new Formatter().joinVoices([voice]).format([voice], Math.max(60, measureWidth - 24))
+        voice.draw(context, stave)
       })
-
-      const totalBeats = notes.reduce((sum, note) => {
-        const { numBeats, beatValue } = parseDuration(note.getDuration())
-        return sum + (numBeats * 4) / beatValue
-      }, 0)
-
-      const voice = new Voice({
-        num_beats: Math.max(beats, Math.ceil(totalBeats)),
-        beat_value: beatType,
-      })
-
-      voice.addTickables(notes)
-      new Formatter().joinVoices([voice]).format([voice], width - 80)
-      voice.draw(context, stave)
 
       targetContainer.style.minHeight = `${renderHeight}px`
     } catch (error) {
@@ -262,6 +523,42 @@ export default function App() {
     }
 
     renderVexFlow(currentPhrase.music_xml, scoreRef.current)
+  }, [currentPhrase, renderVexFlow])
+
+  useEffect(() => {
+    if (!scoreRef.current || typeof ResizeObserver === 'undefined') return
+
+    const target = scoreRef.current
+    let previousWidth = target.clientWidth
+    let frameId = null
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      const nextWidth = Math.round(entry?.contentRect?.width || 0)
+
+      if (!nextWidth || nextWidth === previousWidth) return
+      previousWidth = nextWidth
+
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
+
+      frameId = requestAnimationFrame(() => {
+        const musicXml = target.dataset.musicXmlPreview || currentPhrase?.music_xml
+        if (musicXml?.trim()) {
+          renderVexFlow(musicXml, target)
+        }
+      })
+    })
+
+    observer.observe(target)
+
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
+      observer.disconnect()
+    }
   }, [currentPhrase, renderVexFlow])
 
   const handlePlay = async () => {
