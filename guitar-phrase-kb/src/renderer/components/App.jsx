@@ -44,6 +44,107 @@ function normalizePitch(step, octave, alter) {
   return `${step.toLowerCase()}${accidental}/${octave}`
 }
 
+function noteNameToMidi(step, octave, alter = 0) {
+  const noteMap = {
+    C: 0,
+    D: 2,
+    E: 4,
+    F: 5,
+    G: 7,
+    A: 9,
+    B: 11,
+  }
+
+  return (octave + 1) * 12 + (noteMap[step.toUpperCase()] ?? 0) + alter
+}
+
+function getGuitarPositionCandidates(midi) {
+  const strings = [
+    { string: 6, openMidi: 40 },
+    { string: 5, openMidi: 45 },
+    { string: 4, openMidi: 50 },
+    { string: 3, openMidi: 55 },
+    { string: 2, openMidi: 59 },
+    { string: 1, openMidi: 64 },
+  ]
+
+  return strings
+    .map(({ string, openMidi }) => ({
+      string,
+      fret: midi - openMidi,
+    }))
+    .filter(({ fret }) => fret >= 0 && fret <= 24)
+}
+
+function chooseGuitarPosition(midi, previousPosition) {
+  const candidates = getGuitarPositionCandidates(midi).sort((left, right) => {
+    if (!previousPosition) {
+      if (left.fret !== right.fret) {
+        return left.fret - right.fret
+      }
+
+      return left.string - right.string
+    }
+
+    const leftScore =
+      Math.abs(left.fret - previousPosition.fret) * 3 +
+      Math.abs(left.string - previousPosition.string) * 2 +
+      left.fret * 0.25
+    const rightScore =
+      Math.abs(right.fret - previousPosition.fret) * 3 +
+      Math.abs(right.string - previousPosition.string) * 2 +
+      right.fret * 0.25
+
+    if (leftScore !== rightScore) {
+      return leftScore - rightScore
+    }
+
+    if (left.fret !== right.fret) {
+      return left.fret - right.fret
+    }
+
+    return left.string - right.string
+  })
+
+  if (candidates.length > 0) {
+    return {
+      string: candidates[0].string,
+      fret: candidates[0].fret,
+    }
+  }
+
+  return {
+    string: 1,
+    fret: null,
+  }
+}
+
+function assignGuitarPositions(measures) {
+  let previousPosition = null
+
+  return measures.map((measure) => ({
+    ...measure,
+    parsedNotes: measure.parsedNotes.map((parsedNote) => {
+      if (parsedNote.isRest || typeof parsedNote.midi !== 'number') {
+        return parsedNote
+      }
+
+      const position = chooseGuitarPosition(parsedNote.midi, previousPosition)
+      if (typeof position.fret === 'number') {
+        previousPosition = position
+      }
+
+      return {
+        ...parsedNote,
+        guitarPosition: {
+          string: position.string,
+          fret: position.fret == null ? '?' : `${position.fret}`,
+        },
+      }
+    }),
+  }))
+}
+
 function formatHarmonyStep(step, alter) {
   const accidental = alter === 1 ? '#' : alter === -1 ? 'b' : ''
   return `${step || ''}${accidental}`
@@ -249,6 +350,7 @@ function parseMusicXmlForPreview(musicXml) {
             durationType,
             keys: [normalizePitch(step, octave, alter)],
             accidental: alter === 1 ? '#' : alter === -1 ? 'b' : null,
+            midi: noteNameToMidi(step, octave, alter),
           }
         }
       )
@@ -273,7 +375,7 @@ function parseMusicXmlForPreview(musicXml) {
     .filter((measure) => measure.parsedNotes.length > 0)
 
   return {
-    measures,
+    measures: assignGuitarPositions(measures),
   }
 }
 
@@ -369,7 +471,17 @@ export default function App() {
     }
 
     try {
-      const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental, Barline } =
+      const {
+        Renderer,
+        Stave,
+        StaveNote,
+        Voice,
+        Formatter,
+        Accidental,
+        Barline,
+        TabStave,
+        TabNote,
+      } =
         await import('vexflow')
 
       const { measures } = parseMusicXmlForPreview(musicXml)
@@ -386,10 +498,11 @@ export default function App() {
       const rightPadding = 20
       const topPadding = 24
       const horizontalGap = 0
-      const rowHeight = 148
+      const rowHeight = 248
       const maxRowWidth = width - leftPadding - rightPadding
       const minimumMeasureWidth = 120
       const noteWidth = 28
+      const accidentalWidth = 12
       const rowStartPadding = 72
 
       const placements = []
@@ -400,7 +513,10 @@ export default function App() {
       measures.forEach((measure, index) => {
         const estimatedWidth = Math.max(
           minimumMeasureWidth,
-          36 + measure.parsedNotes.length * noteWidth
+          36 +
+            measure.parsedNotes.length * noteWidth +
+            measure.parsedNotes.filter((parsedNote) => parsedNote.accidental).length *
+              accidentalWidth
         )
         const isNextRowStart = cursorX === leftPadding
         const requiredWidth = estimatedWidth + (isNextRowStart ? rowStartPadding : 0)
@@ -437,6 +553,7 @@ export default function App() {
       placements.forEach(({ index, x, y, isRowStart, measureWidth }) => {
         const measure = measures[index]
         const stave = new Stave(x, y, measureWidth)
+        const tabStave = new TabStave(x, y + 92, measureWidth)
 
         const leftBarTypeMap = {
           begin: Barline.type.SINGLE,
@@ -455,14 +572,26 @@ export default function App() {
             : leftBarTypeMap[measure.leftBarline] || Barline.type.NONE
         )
         stave.setEndBarType(rightBarTypeMap[measure.rightBarline] || Barline.type.SINGLE)
+        tabStave.setBegBarType(
+          isRowStart
+            ? leftBarTypeMap[measure.leftBarline] || Barline.type.SINGLE
+            : leftBarTypeMap[measure.leftBarline] || Barline.type.NONE
+        )
+        tabStave.setEndBarType(
+          rightBarTypeMap[measure.rightBarline] || Barline.type.SINGLE
+        )
 
         if (isRowStart) {
           stave.addClef(measure.clef).addTimeSignature(
             `${measure.beats}/${measure.beatType}`
           )
+          tabStave.addClef('tab').addTimeSignature(
+            `${measure.beats}/${measure.beatType}`
+          )
         }
 
         stave.setContext(context).draw()
+        tabStave.setContext(context).draw()
 
         if (measure.harmony) {
           stave.setText(measure.harmony, 0, {
@@ -490,6 +619,24 @@ export default function App() {
 
           return note
         })
+        const tabNotes = measure.parsedNotes.map((parsedNote) => {
+          if (parsedNote.isRest) {
+            return new TabNote({
+              positions: [{ str: 1, fret: '-' }],
+              duration: parsedNote.durationType.replace(/r$/, ''),
+            })
+          }
+
+          return new TabNote({
+            positions: [
+              {
+                str: parsedNote.guitarPosition?.string || 1,
+                fret: parsedNote.guitarPosition?.fret || '?',
+              },
+            ],
+            duration: parsedNote.durationType,
+          })
+        })
 
         const totalBeats = notes.reduce((sum, note) => {
           const { numBeats, beatValue } = parseDuration(note.getDuration())
@@ -500,10 +647,26 @@ export default function App() {
           num_beats: Math.max(measure.beats, Math.ceil(totalBeats)),
           beat_value: measure.beatType,
         })
+        const tabVoice = new Voice({
+          num_beats: Math.max(measure.beats, Math.ceil(totalBeats)),
+          beat_value: measure.beatType,
+        })
 
         voice.addTickables(notes)
-        new Formatter().joinVoices([voice]).format([voice], Math.max(60, measureWidth - 24))
+        tabVoice.addTickables(tabNotes)
+        const staveNoteWidth = Math.max(
+          60,
+          stave.getNoteEndX() - stave.getNoteStartX() - 8
+        )
+        const tabNoteWidth = Math.max(
+          60,
+          tabStave.getNoteEndX() - tabStave.getNoteStartX() - 8
+        )
+
+        new Formatter().joinVoices([voice]).format([voice], staveNoteWidth)
+        new Formatter().joinVoices([tabVoice]).format([tabVoice], tabNoteWidth)
         voice.draw(context, stave)
+        tabVoice.draw(context, tabStave)
       })
 
       targetContainer.style.minHeight = `${renderHeight}px`
